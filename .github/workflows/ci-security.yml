@@ -37,33 +37,50 @@ jobs:
   # JOB 2 : SCA (Analyse des dépendances avec Trivy)
   # ------------------------------------------------------------------
   sca_trivy:
-    name: SCA - Trivy
+    name: SCA - Trivy Full Scan
     runs-on: self-hosted
     needs: sast
     steps:
       - uses: actions/checkout@v4
 
-      # 1. NETTOYAGE OBLIGATOIRE POUR SELF-HOSTED
-      # On supprime le cache local de Trivy pour forcer un téléchargement propre
+      # 1. NETTOYAGE DU CACHE (Indispensable sur self-hosted)
       - name: Clear Trivy Cache
         run: |
           rm -rf ~/.cache/trivy
           rm -rf .trivy
 
-      # 2. SCAN AVEC FORCAGE DU DEPOT GITHUB (GHCR)
+      # 2. SCAN COMPLET (Vuln + Secrets + Config)
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.29.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'table'
-          # exit-code: '1'
+          # On écrit le résultat dans un fichier texte
+          output: 'trivy_report.txt'
+          # On active tous les scanners pour un scan "complet"
+          scanners: 'vuln,secret,config'
+          # Important : On met exit-code à 0 pour NE PAS bloquer le pipeline
+          # (sinon il s'arrêtera dès qu'il trouve la clé RSA ou une faille)
+          exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
+          # On garde CRITICAL et HIGH pour ne pas avoir un rapport de 1000 pages
           severity: 'CRITICAL,HIGH'
-          # On force le dépôt GitHub (GHCR) qui est plus stable que GCR
+          # On garde la config réseau stable (GHCR)
           db-repository: 'ghcr.io/aquasecurity/trivy-db'
           java-db-repository: 'ghcr.io/aquasecurity/trivy-java-db'
+
+      # 3. AFFICHER LE RESULTAT DANS LES LOGS (Optionnel mais pratique)
+      - name: Display Report in Console
+        run: cat trivy_report.txt
+
+      # 4. SAUVEGARDER LE RAPPORT (Pour le télécharger)
+      - name: Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trivy-Full-Report
+          path: trivy_report.txt
 
   # ------------------------------------------------------------------
   # JOB 3 : DAST (Scan dynamique avec ZAP)
