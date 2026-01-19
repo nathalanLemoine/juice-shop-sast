@@ -286,8 +286,8 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
   app.use(express.static(path.resolve('frontend/dist/frontend')))
-  const cookieSecret = process.env.COOKIE_SECRET;
-  app.use(cookieParser(cookieSecret));
+  const cookieSecret = process.env.COOKIE_SECRET
+  app.use(cookieParser(cookieSecret))
   // vuln-code-snippet end directoryListingChallenge accessLogDisclosureChallenge
 
   /* Configure and enable backend-side i18n */
