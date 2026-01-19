@@ -95,4 +95,17 @@ jobs:
             -I 
 
       # 4. Vérifier le rapport (Si on veut faire échouer le pipeline manuellement)
-      - name: Check
+      - name: Check ZAP Alerts
+        run: |
+          # On vérifie si le rapport contient "Risk: High"
+          if grep -q "Risk: High" ${{ github.workspace }}/zap_report.html; then
+            echo "::error::High risk vulnerabilities found in ZAP report!"
+            exit 1
+          fi
+
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZAP-Report
+          path: zap_report.html
