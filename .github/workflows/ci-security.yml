@@ -43,18 +43,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 1. NETTOYAGE OBLIGATOIRE POUR SELF-HOSTED
+      # On supprime le cache local de Trivy pour forcer un téléchargement propre
+      - name: Clear Trivy Cache
+        run: |
+          rm -rf ~/.cache/trivy
+          rm -rf .trivy
+
+      # 2. SCAN AVEC FORCAGE DU DEPOT GITHUB (GHCR)
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0 # Utiliser une version taguée, pas master
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'table'
-          # Optimisation : Trivy fait échouer le job tout seul si CRITICAL/HIGH
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          db-repository: 'public.ecr.aws/aquasecurity/trivy-db'
+          # On force le dépôt GitHub (GHCR) qui est plus stable que GCR
+          db-repository: 'ghcr.io/aquasecurity/trivy-db'
+          java-db-repository: 'ghcr.io/aquasecurity/trivy-java-db'
 
   # ------------------------------------------------------------------
   # JOB 3 : DAST (Scan dynamique avec ZAP)
