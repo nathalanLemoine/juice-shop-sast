@@ -1,3 +1,4 @@
+name: "CI/CD Pipeline"
 on:
   push:
     branches-ignore:
@@ -16,15 +17,13 @@ on:
       - 'LICENSE'
       - 'data/static/i18n/*.json'
       - 'frontend/src/assets/i18n/*.json'
-
 env:
   NODE_DEFAULT_VERSION: 22
   NODE_OPTIONS: "--max_old_space_size=4096"
   CYCLONEDX_NPM_VERSION: '^2.0.0||^3.0.0'
-
 jobs:
   lint:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: "Check out Git repository"
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
@@ -53,7 +52,6 @@ jobs:
           npm run lint:config -- -f ./config/quiet.yml &&
           npm run lint:config -- -f ./config/tutorial.yml &&
           npm run lint:config -- -f ./config/unsafe.yml
-
   coding-challenge-rsn:
     runs-on: windows-latest
     steps:
@@ -67,7 +65,6 @@ jobs:
         run: npm install
       - name: "Check coding challenges for accidental code discrepancies"
         run: npm run rsn
-
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -108,7 +105,6 @@ jobs:
           path: |
             frontend-lcov.info
             server-lcov.info
-
   api-test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -146,7 +142,6 @@ jobs:
           name: api-test-lcov
           path: |
             api-lcov.info
-
   coverage-report:
     needs: [test, api-test]
     runs-on: ubuntu-latest
@@ -167,7 +162,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           files: frontend-lcov.info server-lcov.info api-lcov.info
-
   custom-config-test:
     runs-on: ubuntu-latest
     steps:
@@ -197,7 +191,6 @@ jobs:
             NODE_ENV=quiet npm run test:server &&
             NODE_ENV=tutorial npm run test:server &&
             NODE_ENV=unsafe npm run test:server
-
   e2e:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -244,7 +237,6 @@ jobs:
           CYPRESS_CACHE_FOLDER: /Users/runner/Library/Caches/Cypress
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   smoke-test:
     runs-on: ubuntu-latest
     steps:
@@ -278,7 +270,6 @@ jobs:
           cd ../..
           chmod +x test/smoke/smoke-test.sh
           test/smoke/smoke-test.sh http://localhost:3000
-
   docker-test:
     runs-on: ubuntu-latest
     steps:
@@ -286,7 +277,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
       - name: "Execute smoke test on Docker"
         run: docker compose -f docker-compose.test.yml up --exit-code-from sut
-
   docker:
     if: github.repository == 'juice-shop/juice-shop' && github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     needs: [test, api-test, e2e, custom-config-test, docker-test]
@@ -306,9 +296,9 @@ jobs:
       - name: "Set tag & labels for ${{ github.ref }}"
         run: |
           if [ "$GITHUB_REF" == "refs/heads/master" ]; then
-            echo "DOCKER_TAG=latest" >> $GITHUB_ENV
+          echo "DOCKER_TAG=latest" >> $GITHUB_ENV
           else
-            echo "DOCKER_TAG=snapshot" >> $GITHUB_ENV
+          echo "DOCKER_TAG=snapshot" >> $GITHUB_ENV
           fi
           echo "VCS_REF=`git rev-parse --short HEAD`" >> $GITHUB_ENV
           echo "BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”`" >> $GITHUB_ENV
@@ -325,7 +315,6 @@ jobs:
             VCS_REF=${{ env.VCS_REF }}
             BUILD_DATE=${{ env.BUILD_DATE }}
             CYCLONEDX_NPM_VERSION=${{ env.CYCLONEDX_NPM_VERSION }}
-
   heroku:
     if: github.repository == 'juice-shop/juice-shop' && github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     needs: [test, api-test, e2e, custom-config-test]
@@ -338,11 +327,11 @@ jobs:
       - name: "Set Heroku app & branch for ${{ github.ref }}"
         run: |
           if [ "$GITHUB_REF" == "refs/heads/master" ]; then
-            echo "HEROKU_APP=juice-shop" >> $GITHUB_ENV
-            echo "HEROKU_BRANCH=master" >> $GITHUB_ENV
+          echo "HEROKU_APP=juice-shop" >> $GITHUB_ENV
+          echo "HEROKU_BRANCH=master" >> $GITHUB_ENV
           else
-            echo "HEROKU_APP=juice-shop-staging" >> $GITHUB_ENV
-            echo "HEROKU_BRANCH=develop" >> $GITHUB_ENV
+          echo "HEROKU_APP=juice-shop-staging" >> $GITHUB_ENV
+          echo "HEROKU_BRANCH=develop" >> $GITHUB_ENV
           fi
       - name: "Deploy ${{ github.ref }} to Heroku"
         uses: akhileshns/heroku-deploy@581dd286c962b6972d427fcf8980f60755c15520 #v3.13.15
@@ -351,7 +340,6 @@ jobs:
           heroku_app_name: ${{ env.HEROKU_APP }}
           heroku_email: bjoern.kimminich@owasp.org
           branch: ${{ env.HEROKU_BRANCH }}
-
   notify-slack:
     if: github.repository == 'juice-shop/juice-shop' && github.event_name == 'push' && (success() || failure())
     needs:
