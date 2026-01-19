@@ -54,6 +54,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          db-repository: 'public.ecr.aws/aquasecurity/trivy-db'
 
   # ------------------------------------------------------------------
   # JOB 3 : DAST (Scan dynamique avec ZAP)
